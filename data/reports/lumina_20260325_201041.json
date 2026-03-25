@@ -1,0 +1,33 @@
+{
+  "run_id": "20260325_201041",
+  "client_id": "lumina",
+  "query": "Generate a weekly performance report with anomaly analysis",
+  "started_at": "2026-03-25T20:10:41.618997",
+  "final_report": "## Executive Summary\nRevenue decreased by 84% this week, dropping to $73.13, significantly below the 14-day baseline of $463.48. This decline was accompanied by an 89% drop in sessions, falling to 23. The buy box percentage also plummeted to 0.11, 88% below its baseline of 0.88, indicating potential visibility issues likely caused by inventory shortages or listing changes.\n\n## Key Metrics\n- Revenue (USD): latest=$73.13, WoW change=-84%\n- Sessions: latest=23, WoW change=-89%\n- Buy Box Percentage: latest=0.11, WoW change=-88%\n- Revenue (90-day mean): $461.78\n- Ad Revenue (90-day mean): $231.38\n- Organic Revenue (90-day mean): $230.40\n- Units Sold (90-day mean): 12.0\n- Conversion Rate (90-day mean): 0.0618\n- ACOS (90-day mean): 0.416\n- TACOS (90-day mean): 0.208\n- ASP (USD, 90-day mean): $38.48\n\n## Anomalies\n- Revenue (USD) on January 21 was 84% below its 14-day baseline (73.13 vs 463.48).\n- Sessions on January 21 were 89% below its 14-day baseline (23.00 vs 206.21).\n- Buy Box Percentage on January 21 was 88% below its 14-day baseline (0.11 vs 0.88).\n\n## Recommended Actions\n1. **Investigate Inventory Levels**: Conduct an immediate review of inventory to identify shortages. This is critical to restore visibility and sales. Expected impact: Recovery of revenue and sessions as inventory issues are resolved.\n   \n2. **Analyze Competitor Activity**: Assess competitor pricing and listing strategies to understand market positioning. This will help identify if competitive actions contributed to the drop in buy box percentage. Expected impact: Improved competitive positioning and potential recovery in buy box percentage.\n\n3. **Optimize Listings**: Review and optimize product listings to enhance visibility and conversion rates. This is essential to regain lost traffic and sales. Expected impact: Increased sessions and revenue as listings become more attractive to potential buyers.",
+  "anomalies": [
+    {
+      "metric": "revenue_usd",
+      "description": "2024-01-21: revenue_usd was 84% below its 14-day baseline (73.13 vs 463.48)",
+      "deviation_pct": 84.2
+    },
+    {
+      "metric": "sessions",
+      "description": "2024-01-21: sessions was 89% below its 14-day baseline (23.00 vs 206.21)",
+      "deviation_pct": 88.8
+    },
+    {
+      "metric": "buy_box_pct",
+      "description": "2024-01-21: buy_box_pct was 88% below its 14-day baseline (0.11 vs 0.88)",
+      "deviation_pct": 87.9
+    }
+  ],
+  "compliance_passed": true,
+  "compliance_confidence": 1.0,
+  "errors": [],
+  "completed_agents": [
+    "research_agent",
+    "analysis_agent",
+    "report_agent",
+    "compliance_agent"
+  ]
+}

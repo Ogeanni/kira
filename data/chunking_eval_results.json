@@ -1,0 +1,17 @@
+{
+  "fixed_size": {
+    "faithfulness": 0.9,
+    "answer_relevancy": 0.9440066822026154,
+    "context_precision": 0.8999999999449999
+  },
+  "recursive": {
+    "faithfulness": 0.875,
+    "answer_relevancy": 0.943173002850215,
+    "context_precision": 0.8999999999333334
+  },
+  "sentence_window": {
+    "faithfulness": 0.9166666666666666,
+    "answer_relevancy": 0.9639558898949435,
+    "context_precision": 0.93333333328
+  }
+}

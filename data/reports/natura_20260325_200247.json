@@ -1,0 +1,23 @@
+{
+  "run_id": "20260325_200247",
+  "client_id": "natura",
+  "query": "Generate a weekly performance report with anomaly analysis",
+  "started_at": "2026-03-25T20:02:47.964025",
+  "final_report": "## Executive Summary\nThis week, total revenue decreased by 1.9% to $581.74, falling below the 90-day mean of $588.89. The decline was primarily driven by a 2.5% drop in organic revenue, which totaled $341.05. Despite this, sessions increased by 2.4% to 197, indicating stable traffic quality.\n\n## Key Metrics\n- Total Revenue: $581.74 (-1.9% WoW)\n- Organic Revenue: $341.05 (-2.5% WoW)\n- Ad Revenue: $240.69 (+0.2% WoW)\n- Units Sold: 13.0 (-3.3% WoW)\n- Sessions: 197.0 (+2.4% WoW)\n- Conversion Rate: 0.073 (no change)\n- ACOS: 0.38 (no change)\n- TACOS: 0.157 (no change)\n- Buy Box Percentage: 0.40 (56% below 14-day baseline)\n- Average Selling Price: $44.75 (+2.0% WoW)\n\n## Anomalies\n- Buy Box Percentage: On February 15, the buy box percentage dropped to 0.40, which is 56% below its 14-day baseline of 0.90. This anomaly suggests potential issues with competitive positioning or inventory management.\n\n## Recommended Actions\n1. **Investigate Buy Box Loss**: Conduct a thorough analysis of competitive positioning and inventory levels to identify the cause of the buy box percentage drop.  \n   *Why*: Understanding the root cause will help restore competitive advantage.  \n   *Expected Impact*: Improved buy box percentage could lead to increased sales and revenue.\n\n2. **Optimize Listings for Organic Revenue**: Review and enhance product listings to improve visibility and attractiveness, targeting a 5% increase in organic revenue.  \n   *Why*: A focus on organic revenue is crucial for overall revenue recovery.  \n   *Expected Impact*: Enhanced listings may drive higher organic sales, contributing to overall revenue growth.\n\n3. **Monitor Competitor Activity**: Implement a weekly review of competitor pricing and promotions to stay informed of market dynamics.  \n   *Why*: Staying competitive is essential for maintaining market share and buy box percentage.  \n   *Expected Impact*: Timely adjustments based on competitor actions can help maintain or improve sales performance.",
+  "anomalies": [
+    {
+      "metric": "buy_box_pct",
+      "description": "2024-02-15: buy_box_pct was 56% below its 14-day baseline (0.40 vs 0.90)",
+      "deviation_pct": 56.0
+    }
+  ],
+  "compliance_passed": true,
+  "compliance_confidence": 1.0,
+  "errors": [],
+  "completed_agents": [
+    "research_agent",
+    "analysis_agent",
+    "report_agent",
+    "compliance_agent"
+  ]
+}

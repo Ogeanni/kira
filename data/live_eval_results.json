@@ -1,0 +1,11 @@
+{
+  "strategy": "sentence_window",
+  "backend": "ChromaStore",
+  "faithfulness": 0.8666666666666666,
+  "answer_relevancy": 0.7639847012074614,
+  "context_precision": 0.9233333332993888,
+  "thresholds": {
+    "faithfulness": 0.85,
+    "context_precision": 0.8
+  }
+}
