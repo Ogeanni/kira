@@ -1,0 +1,52 @@
+# deploy/kira-api.service
+#
+# systemd service file for the KIRA FastAPI backend.
+# Manages the uvicorn process — starts on boot, restarts on crash.
+#
+# Copy to: /etc/systemd/system/kira-api.service
+# Enable:  sudo systemctl enable kira-api
+# Start:   sudo systemctl start kira-api
+# Status:  sudo systemctl status kira-api
+# Logs:    sudo journalctl -u kira-api -f
+
+[Unit]
+Description=KIRA API — Knowledge Intelligence & Reporting Agent
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/kira
+
+# Activate the virtual environment and run the startup sequence:
+# 1. Pull data from S3
+# 2. Start uvicorn
+ExecStartPre=/home/ubuntu/kira/.venv/bin/python scripts/pull_data_from_s3.py
+ExecStart=/home/ubuntu/kira/.venv/bin/uvicorn output.api:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 1 \
+    --log-level info
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=60s
+StartLimitBurst=3
+
+# Load environment variables from .env file
+EnvironmentFile=/home/ubuntu/kira/.env
+
+# Logging — captured by journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=kira-api
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
