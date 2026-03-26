@@ -1,0 +1,14 @@
+code .dockerignore
+```
+```
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+data/chroma/
+data/memory/
+data/chunks/
+data/embeddings/
+.git/
+*.pem
