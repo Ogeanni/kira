@@ -5,6 +5,8 @@ Second agent in the pipeline.
 Job: query performance metrics, detect anomalies, write
      a plain English analysis narrative.
 
+Data source: PostgreSQL (primary) → CSV fallback if DB unavailable.
+
 Input:  PipelineState with retrieved_contexts
 Output: PipelineState with metrics_summary, anomalies, analysis_narrative
 """
@@ -20,30 +22,73 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from agents import PipelineState, AnomalyFlag
-from intelligence.mcp_server import query_metrics
 from intelligence.llm_client import get_llm
 from config.settings import get_settings
 
 settings = get_settings()
 
-# Per-metric deviation thresholds (%)
-# Different metrics have different normal variance ranges
 THRESHOLDS = {
     "revenue_usd": 40,
     "sessions": 40,
     "buy_box_pct": 30,
-    "acos": 20,           # tight — 20% ACOS deviation is significant
+    "acos": 20,
     "conversion_rate": 25,
 }
+
+
+def _get_metrics(client_id: str, days: int = 90) -> list[dict]:
+    """
+    Fetches metrics from PostgreSQL.
+    Falls back to CSV via MCP tool if database is unavailable.
+    Graceful fallback means the pipeline works in all environments.
+    """
+    try:
+        from infra.database import get_session, get_client_metrics
+        session = get_session()
+        rows = get_client_metrics(session, client_id, days=days)
+        session.close()
+        if rows:
+            return rows
+        raise ValueError(f"No rows returned from database for {client_id}")
+    except Exception as db_error:
+        print(f"  [Analysis] DB unavailable ({db_error}) — falling back to CSV")
+        from intelligence.mcp_server import query_metrics
+        raw = query_metrics(client_id=client_id, days=days, metric="all")
+        data = json.loads(raw)
+        if "error" in data:
+            raise RuntimeError(data["error"])
+        return data.get("rows", [])
+
+
+def _compute_summary(rows: list[dict]) -> dict:
+    """Computes mean, min, max, latest for each numeric metric."""
+    if not rows:
+        return {}
+    df = pd.DataFrame(rows)
+    numeric_cols = [
+        "revenue_usd", "ad_revenue_usd", "organic_revenue_usd",
+        "units_sold", "sessions", "conversion_rate",
+        "acos", "tacos", "buy_box_pct", "asp_usd",
+    ]
+    summary = {}
+    for col in numeric_cols:
+        if col not in df.columns:
+            continue
+        series = df[col].astype(float)
+        summary[col] = {
+            "mean": round(float(series.mean()), 4),
+            "min": round(float(series.min()), 4),
+            "max": round(float(series.max()), 4),
+            "latest": round(float(series.iloc[-1]), 4),
+        }
+    return summary
 
 
 def _detect_anomalies(df_rows: list[dict]) -> list[AnomalyFlag]:
     """
     Detects anomalies using a rolling baseline with per-metric thresholds.
-
-    For each day, compares value against mean of preceding 14 days.
-    Rolling window excludes current day so baseline is never
-    contaminated by the anomaly it's trying to detect.
+    Rolling window excludes current day — baseline never contaminated
+    by the anomaly it's measuring against.
     """
     if not df_rows:
         return []
@@ -56,10 +101,8 @@ def _detect_anomalies(df_rows: list[dict]) -> list[AnomalyFlag]:
     for metric, threshold in THRESHOLDS.items():
         if metric not in df.columns:
             continue
-
         series = df[metric].astype(float)
         baseline = series.shift(1).rolling(window=14, min_periods=5).mean()
-
         for i, (val, base) in enumerate(zip(series, baseline)):
             if pd.isna(base) or base == 0:
                 continue
@@ -78,19 +121,41 @@ def _detect_anomalies(df_rows: list[dict]) -> list[AnomalyFlag]:
                     ),
                 ))
 
-    # Deduplicate — keep worst deviation per metric
     seen: dict[str, AnomalyFlag] = {}
     for flag in flags:
         if flag.metric not in seen or flag.deviation_pct > seen[flag.metric].deviation_pct:
             seen[flag.metric] = flag
-
     return list(seen.values())
+
+
+def _save_anomalies_to_db(client_id: str, run_id: str, anomalies: list[AnomalyFlag]) -> None:
+    """Persists detected anomalies to the database for historical tracking."""
+    if not anomalies:
+        return
+    try:
+        from infra.database import get_session, AnomalyRecord
+        session = get_session()
+        for a in anomalies:
+            record = AnomalyRecord(
+                run_id=run_id,
+                client_id=client_id,
+                metric=a.metric,
+                current_value=a.current_value,
+                baseline_value=a.mean_value,
+                deviation_pct=a.deviation_pct,
+                description=a.description,
+            )
+            session.add(record)
+        session.commit()
+        session.close()
+    except Exception:
+        pass   # DB write failure never breaks the pipeline
 
 
 def run(state: PipelineState) -> PipelineState:
     """
-    Queries 90 days of metrics, detects anomalies using rolling baseline,
-    then generates a plain English analysis narrative.
+    Queries 90 days of metrics from PostgreSQL, detects anomalies,
+    generates plain English analysis narrative.
     """
     print(f"  [Analysis] Querying metrics for {state.client_id}...")
 
@@ -99,16 +164,17 @@ def run(state: PipelineState) -> PipelineState:
         return state
 
     try:
-        raw = query_metrics(client_id=state.client_id, days=90, metric="all")
-        data = json.loads(raw)
+        rows = _get_metrics(state.client_id, days=90)
 
-        if "error" in data:
-            state.add_error("analysis_agent", data["error"])
+        if not rows:
+            state.add_error("analysis_agent", f"No metrics found for {state.client_id}")
             return state
 
-        state.metrics_summary = data.get("summary", {})
-        anomalies = _detect_anomalies(data.get("rows", []))
+        state.metrics_summary = _compute_summary(rows)
+        anomalies = _detect_anomalies(rows)
         state.anomalies = anomalies
+
+        _save_anomalies_to_db(state.client_id, state.run_id, anomalies)
 
         anomaly_text = (
             "\n".join(f"- {a.description}" for a in anomalies)
