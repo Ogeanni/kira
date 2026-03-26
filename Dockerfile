@@ -11,11 +11,13 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
+# Copy project code
 COPY . .
 
-# Expose port
 EXPOSE 8000
 
-# Run FastAPI
-CMD ["uvicorn", "output.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Startup sequence:
+# 1. Pull synthetic data from S3
+# 2. Run ingestion into Pinecone if index is empty
+# 3. Start the FastAPI server
+CMD ["sh", "-c", "python scripts/pull_data_from_s3.py && uvicorn output.api:app --host 0.0.0.0 --port $PORT"]
