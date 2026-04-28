@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     s3_region: str = "us-east-1"
     s3_reports_prefix: str = "kira-reports"
     slack_webhook_url: Optional[str] = Field(default=None)
-    database_url: str = Field(default="postgresql://kira:kira_dev@localhost:5432/kira")
+    database_url: str = Field(default="")
 
     # ── Computed paths ────────────────────────────────
     @property

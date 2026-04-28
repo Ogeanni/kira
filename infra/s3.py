@@ -22,13 +22,12 @@ settings = get_settings()
 
 
 def get_s3_client():
-    """Returns a boto3 S3 client with explicit regional endpoint."""
+    """Returns a boto3 S3 client."""
     return boto3.client(
         "s3",
         aws_access_key_id=settings.aws_access_key_id,
         aws_secret_access_key=settings.aws_secret_access_key,
         region_name=settings.s3_region,
-        endpoint_url=settings.s3_endpoint_url,
     )
 
 
