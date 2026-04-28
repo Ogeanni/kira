@@ -36,40 +36,17 @@ def pull_data() -> None:
         print("S3 not configured — skipping data pull.")
         return
 
-    client = get_s3_client()
-    prefix = "kira-data/"
-
-    response = client.list_objects_v2(
-        Bucket=settings.s3_bucket_name,
-        Prefix=prefix,
-    )
-
-    objects = response.get("Contents", [])
-    if not objects:
-        print("No data found in S3. Run generate_data.py locally and upload first.")
-        return
-
-    print(f"Pulling {len(objects)} files from S3...")
-
-    for obj in objects:
-        s3_key = obj["Key"]
-        local_path = Path(s3_key.replace(prefix, ""))
-        local_path.parent.mkdir(parents=True, exist_ok=True)
-
-        if local_path.exists():
-            print(f"  Exists   : {local_path}")
-            continue
-
-        body = client.get_object(
+    try:
+        client = get_s3_client()
+        prefix = "kira-data/"
+        response = client.list_objects_v2(
             Bucket=settings.s3_bucket_name,
-            Key=s3_key,
-        )["Body"].read()
-
-        local_path.write_bytes(body)
-        print(f"  Downloaded: {local_path}")
-
-    print("Data pull complete.\n")
-
+            Prefix=prefix,
+        )
+        # rest of your existing code
+    except Exception as e:
+        print(f"S3 pull failed — continuing without data: {e}")
+        return
 
 def needs_ingestion() -> bool:
     """
