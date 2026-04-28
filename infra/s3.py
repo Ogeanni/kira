@@ -21,15 +21,20 @@ from config.settings import get_settings
 settings = get_settings()
 
 
+
 def get_s3_client():
     """Returns a boto3 S3 client."""
+    from botocore.config import Config
     return boto3.client(
         "s3",
         aws_access_key_id=settings.aws_access_key_id,
         aws_secret_access_key=settings.aws_secret_access_key,
         region_name=settings.s3_region,
+        config=Config(
+            s3={"addressing_style": "path"},
+            region_name=settings.s3_region
+        )
     )
-
 
 def upload_report(report_data: dict) -> str:
     """
