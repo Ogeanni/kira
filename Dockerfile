@@ -20,4 +20,4 @@ EXPOSE 8000
 # 1. Pull synthetic data from S3
 # 2. Run ingestion into Pinecone if index is empty
 # 3. Start the FastAPI server
-CMD ["sh", "-c", "python scripts/pull_data_from_s3.py && uvicorn output.api:app --host 0.0.0.0 --port 8080"]
+CMD ["sh", "-c", "python scripts/pull_data_from_s3.py && uvicorn output.api:app --host 0.0.0.0 --port 8000"]
