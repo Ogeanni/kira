@@ -23,7 +23,7 @@ settings = get_settings()
 
 
 def get_s3_client():
-    """Returns a boto3 S3 client."""
+    """Returns a boto3 S3 client"""
     return boto3.client(
         "s3",
         aws_access_key_id=settings.aws_access_key_id,
