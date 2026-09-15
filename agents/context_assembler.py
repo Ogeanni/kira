@@ -231,6 +231,7 @@ def build_context_window(
     conflict_description: str,
     uncertainty: bool,
     missing_context: str,
+    operational_context: str = "",
 ) -> str:
     """
     Builds the structured context window string.
@@ -285,6 +286,16 @@ def build_context_window(
             "No authoritative policy sources retrieved for this query."
         )
 
+    # Operational data — database context
+    if operational_context:
+        sections.append("\n== CLIENT OPERATIONAL DATA ==")
+        sections.append(
+            "Current client configuration from the database. "
+            "Use these specific thresholds and targets in recommendations — "
+            "do not substitute generic values."
+        )
+        sections.append(operational_context)
+
     # Client-specific context
     if client_specific:
         sections.append("\n== CLIENT-SPECIFIC CONTEXT ==")
@@ -338,6 +349,7 @@ def assemble(
     retrieved_contexts: list,
     query: str,
     client_id: str = "global",
+    operational_context: str = "", 
 ) -> AssembledContext:
     """
     Main entry point. Takes retrieved contexts and produces
@@ -366,6 +378,7 @@ def assemble(
             source_count=0,
             uncertainty=True,
             missing_context="No context retrieved for this query.",
+            
         )
 
     # Convert RetrievedContext to SourceBlock
@@ -445,6 +458,7 @@ def assemble(
         conflict_description=conflict_description,
         uncertainty=uncertainty,
         missing_context=missing_context,
+        operational_context=operational_context, 
     )
 
     return AssembledContext(
