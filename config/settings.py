@@ -85,6 +85,11 @@ class Settings(BaseSettings):
     slack_webhook_url: Optional[str] = Field(default=None)
     database_url: str = Field(default="")
 
+    # ── Reranker settings ────────────────────────────────────────
+    reranker_enabled: bool = Field(default=True)
+    reranker_model: str = Field(default="cross-encoder/ms-marco-MiniLM-L-6-v2")
+    reranker_candidate_multiplier: int = Field(default=3)
+
     # ── Computed paths ────────────────────────────────
     @property
     def data_dir(self) -> Path:

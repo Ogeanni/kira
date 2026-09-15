@@ -41,6 +41,16 @@ If none, write: No anomalies detected this period.
 Maximum 3 action items. Each must have: what, why, expected impact.
 
 Keep the total report under 400 words.
+
+GROUNDING RULES — these override everything else:
+1. Recommended actions must be grounded in the supporting context provided.
+   If the context contains specific client rules, thresholds, or procedures,
+   use them. Do not give generic advice when specific guidance exists.
+2. If the context does not contain enough information to make a specific
+   recommendation, say explicitly: "Insufficient context to recommend a
+   specific action for [topic]."
+3. Never use general Amazon best practices as a substitute for specific
+   retrieved context. If it is not in the context, do not recommend it.
 """.strip()
 
 
@@ -49,6 +59,27 @@ def run(state: PipelineState) -> PipelineState:
 
     if not state.is_healthy:
         print(f"  [Report] Skipping — pipeline has errors.")
+        return state
+
+    # Handle uncertainty before checking analysis narrative
+    # When the assembler signals low confidence, the system must
+    # explicitly state what it cannot answer rather than generating
+    # from insufficient evidence or failing silently
+    if (state.assembled_context and
+            state.assembled_context.uncertainty and
+            not state.analysis_narrative):
+        state.report_draft = (
+            f"## Insufficient Evidence\n\n"
+            f"I was unable to generate a report for this query.\n\n"
+            f"**Reason:** {state.assembled_context.missing_context}\n\n"
+            f"**Query:** {state.query}\n\n"
+            f"The knowledge base does not contain information about this topic. "
+            f"Please verify the query is within KIRA's scope — Amazon agency "
+            f"performance reporting, ACOS management, compliance, and client "
+            f"onboarding context."
+        )
+        state.mark_complete("report_agent")
+        print(f"  [Report] Uncertainty response generated.")
         return state
 
     if not state.analysis_narrative:
@@ -79,7 +110,7 @@ def run(state: PipelineState) -> PipelineState:
                         f"Analysis:\n{state.analysis_narrative}\n\n"
                         f"Metrics (90-day):\n{metrics_text}\n\n"
                         f"Anomalies:\n{anomaly_text}\n\n"
-                        f"Supporting context:\n{state.context_block[:1200]}"
+                        f"Supporting context:\n{state.assembled_context.context_window if state.assembled_context else state.context_block}"
                     ),
                 },
             ],

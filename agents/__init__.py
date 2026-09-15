@@ -15,7 +15,7 @@ Why Pydantic?
     the packet at any point
 """
 
-from typing import Optional
+from typing import Optional, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 
@@ -26,6 +26,9 @@ class RetrievedContext(BaseModel):
     source_file: str
     doc_type: str
     score: float
+    window_context: str = ""
+    section_title: str = ""
+    document_title: str = ""
 
 
 class AnomalyFlag(BaseModel):
@@ -65,6 +68,7 @@ class PipelineState(BaseModel):
     # ── Populated by Research Agent ───────────────────────────────
     retrieved_contexts: list[RetrievedContext] = Field(default_factory=list)
     research_summary: str = ""          # brief summary of what was retrieved
+    assembled_context: Optional[Any] = None   # AssembledContext from context_assembler
 
     # ── Populated by Analysis Agent ───────────────────────────────
     metrics_summary: dict = Field(default_factory=dict)

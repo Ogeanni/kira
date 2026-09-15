@@ -105,9 +105,12 @@ def retrieve_context(
                 "score": r.score,
                 "source_file": r.metadata.get("source_file", ""),
                 "doc_type": r.metadata.get("doc_type", ""),
+                "section_title": r.metadata.get("section_title", ""),
+                "document_title": r.metadata.get("document_title", ""),
+                "window_context": r.metadata.get("window_context", r.context),
             }
             for r in response.results
-        ],
+    ],
     })
 
 

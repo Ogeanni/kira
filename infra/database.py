@@ -170,13 +170,116 @@ class Feedback(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class CampaignPerformance(Base):
+    """
+    Weekly campaign performance metrics per client.
+    Loaded from campaign_performance_report.xlsx.
+    Queried by: query_metrics MCP tool, analysis agent.
+    """
+    __tablename__ = "campaign_performance"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    week = Column(String(20), nullable=False)
+    client_id = Column(String(50), nullable=False)
+    campaign_name = Column(String(200))
+    campaign_type = Column(String(50))
+    spend_usd = Column(Float, nullable=False)
+    revenue_usd = Column(Float, nullable=False)
+    acos = Column(Float)
+    impressions = Column(Integer)
+    clicks = Column(Integer)
+    ctr = Column(Float)
+    cpc_usd = Column(Float)
+    units_sold = Column(Integer)
+    roas = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class KeywordRanking(Base):
+    """
+    Keyword ranking and search volume tracker per client.
+    Loaded from keyword_tracker.xlsx.
+    Queried by: analysis agent for SEO performance trends.
+    """
+    __tablename__ = "keyword_rankings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(String(50), nullable=False)
+    asin = Column(String(20), nullable=False)
+    keyword = Column(String(200), nullable=False)
+    match_type = Column(String(20))
+    monthly_search_volume = Column(Integer)
+    current_rank = Column(Integer)
+    previous_rank = Column(Integer)
+    rank_change = Column(Integer)
+    bid_usd = Column(Float)
+    relevance_score = Column(Float)
+    priority = Column(String(20))
+    notes = Column(Text)
+    recorded_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ProductCatalogue(Base):
+    """
+    Product master data per client.
+    Loaded from product_catalogue.xlsx.
+    Queried by: analysis agent for Buy Box status, ASP, review counts.
+    Notes field contains free-text operational commentary.
+    """
+    __tablename__ = "product_catalogue"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(String(50), nullable=False)
+    asin = Column(String(20), nullable=False)
+    product_title = Column(String(500))
+    category = Column(String(100))
+    sub_category = Column(String(100))
+    asp_usd = Column(Float)
+    units_fba = Column(Integer)
+    buy_box_status = Column(String(20))
+    buy_box_pct = Column(Float)
+    star_rating = Column(Float)
+    review_count = Column(Integer)
+    acos_target = Column(Float)
+    break_even_acos = Column(Float)
+    status = Column(String(20))
+    notes = Column(Text)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AcosTarget(Base):
+    """
+    Per-client ACOS targets by account stage.
+    Loaded from acos_targets_by_client.csv.
+    More granular than the single acos_target in the clients table —
+    supports seasonal and stage-based target variations.
+    """
+    __tablename__ = "acos_targets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id = Column(String(50), nullable=False)
+    client_name = Column(String(100))
+    account_stage = Column(String(50), nullable=False)
+    days_range = Column(String(20))
+    acos_target_min = Column(Float)
+    acos_target_max = Column(Float)
+    break_even_acos = Column(Float)
+    primary_objective = Column(String(50))
+    notes = Column(Text)
+
 # ── Schema management ─────────────────────────────────────────────────
 
 def create_tables() -> None:
     """Creates all tables if they don't exist."""
     engine = get_engine()
     Base.metadata.create_all(engine)
-    print("Tables created: clients, daily_metrics, anomalies, pipeline_runs, feedback")
+    tables = [
+        "clients", "daily_metrics", "anomalies",
+        "pipeline_runs", "feedback",
+        "campaign_performance", "keyword_rankings",
+        "product_catalogue", "acos_targets",
+    ]
+    print(f"Tables created: {', '.join(tables)}")
 
 
 def drop_tables() -> None:

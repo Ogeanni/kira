@@ -80,6 +80,15 @@ def run(state: PipelineState) -> PipelineState:
         )
 
         state.mark_complete("research_agent")
+        
+        # Assemble structured context window
+        from agents.context_assembler import assemble
+        state.assembled_context = assemble(
+            retrieved_contexts=contexts,
+            query=state.query,
+            client_id=state.client_id,
+        )
+        print(f"  [Research] Context assembled. Confidence: {state.assembled_context.confidence}")
         print(f"  [Research] Done. {len(contexts)} chunks from {len(source_summary)} sources.")
 
     except Exception as e:
