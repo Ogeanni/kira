@@ -7,7 +7,7 @@ Built as a portfolio project to demonstrate end-to-end AI engineering —
 from embeddings and vector retrieval to agent orchestration, memory, and deployment.
 
 **Live demo:** [kira-app.streamlit.app](https://kira-app.streamlit.app)
-**API:** [kira-api-pvpl.onrender.com/docs](https://kira-api-pvpl.onrender.com/docs)
+**API:** [kira-api-pvpl.onrender.com/docs](https://kira-api-1.onrender.com/docs)
 
 ---
 
@@ -217,10 +217,10 @@ streamlit run output/app.py
 
 ```bash
 # API health check
-curl https://kira-api-pvpl.onrender.com/health
+curl https://kira-api-1.onrender.com/health
 
 # Trigger a pipeline run
-curl -X POST https://kira-api-pvpl.onrender.com/run-pipeline \
+curl -X POST https://kira-api-1.onrender.com/run-pipeline \
   -H "Content-Type: application/json" \
   -d '{"client_id": "lumina", "query": "weekly performance report"}'
 ```
