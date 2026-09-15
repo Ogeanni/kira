@@ -232,6 +232,7 @@ def build_context_window(
     uncertainty: bool,
     missing_context: str,
     operational_context: str = "",
+    memory_context: str = "",  
 ) -> str:
     """
     Builds the structured context window string.
@@ -296,6 +297,15 @@ def build_context_window(
         )
         sections.append(operational_context)
 
+     # Past findings from memory
+    if memory_context:
+        sections.append("\n== PAST FINDINGS ==")
+        sections.append(
+            "Relevant findings from previous pipeline runs for this client. "
+            "Use for trend context and to avoid repeating past mistakes."
+        )
+        sections.append(memory_context)
+
     # Client-specific context
     if client_specific:
         sections.append("\n== CLIENT-SPECIFIC CONTEXT ==")
@@ -350,6 +360,7 @@ def assemble(
     query: str,
     client_id: str = "global",
     operational_context: str = "", 
+    memory_context: str = "", 
 ) -> AssembledContext:
     """
     Main entry point. Takes retrieved contexts and produces
@@ -459,6 +470,7 @@ def assemble(
         uncertainty=uncertainty,
         missing_context=missing_context,
         operational_context=operational_context, 
+        memory_context=memory_context, 
     )
 
     return AssembledContext(

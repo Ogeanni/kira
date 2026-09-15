@@ -49,7 +49,8 @@ MEMORY_CONFIG = {
         "provider": "qdrant",
         "config": {
             "collection_name": "kira_memory",
-            "path": str(settings.data_dir / "memory"),
+            "host": "localhost",
+            "port": 6333,
         },
     },
 }

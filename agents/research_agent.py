@@ -98,6 +98,47 @@ def _get_client_operational_context(client_id: str) -> str:
         return ""
 
 
+def _get_memory_context(client_id: str, query: str) -> str:
+    """
+    Retrieves relevant past findings from memory for this client.
+
+    Returns a formatted string of past anomalies, compliance issues,
+    and analysis summaries relevant to the current query.
+
+    Returns empty string if memory is disabled or no relevant
+    memories exist.
+    """
+    if client_id == "global":
+        return ""
+
+    try:
+        from intelligence.mcp_server import read_memory
+        import json
+
+        raw = read_memory(
+            client_id=client_id,
+            query=query,
+            top_k=3,
+        )
+        data = json.loads(raw)
+        memories = data.get("memories", [])
+
+        if not memories:
+            return ""
+
+        lines = ["PAST FINDINGS FROM PREVIOUS RUNS"]
+        for m in memories:
+            score = m.get("score", 0)
+            if score > 0.40:  # only include relevant memories
+                lines.append(f"  - {m['memory']}")
+
+        return "\n".join(lines) if len(lines) > 1 else ""
+
+    except Exception as e:
+        print(f"  [Research] Memory retrieval failed (non-critical): {e}")
+        return ""
+    
+
 def run(state: PipelineState) -> PipelineState:
     """
     Retrieves context relevant to the query and client,
@@ -148,7 +189,12 @@ def run(state: PipelineState) -> PipelineState:
         if operational_context:
             print(f"  [Research] Operational context retrieved for {state.client_id}")
 
-        # ── 3. Source summary ─────────────────────────────────────
+        # ── 3. Memory retrieval ───────────────────────────────────
+        memory_context = _get_memory_context(state.client_id, state.query)
+        if memory_context:
+            print(f"  [Research] Memory context retrieved for {state.client_id}")
+
+        # ── 4. Source summary ─────────────────────────────────────
         source_summary = {}
         for c in contexts:
             doc = c.source_file
@@ -167,13 +213,14 @@ def run(state: PipelineState) -> PipelineState:
 
         state.mark_complete("research_agent")
 
-        # ── 4. Context assembly ───────────────────────────────────
+        # ── 5. Context assembly ───────────────────────────────────
         from agents.context_assembler import assemble
         state.assembled_context = assemble(
             retrieved_contexts=contexts,
             query=state.query,
             client_id=state.client_id,
             operational_context=operational_context,
+            memory_context=memory_context,
         )
         print(
             f"  [Research] Context assembled. "
