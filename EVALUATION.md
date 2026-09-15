@@ -409,3 +409,114 @@ for current use cases.
 The system is not perfect. It is measured, understood, and honest about
 where it fails. That is a stronger foundation for production than a system
 that appears to work but has never been tested to failure.
+
+---
+
+## Generation layer evaluation
+
+### What was tested
+
+After retrieval and context assembly were validated, generation was tested
+against three specific production criteria:
+
+1. Does the system hallucinate facts not in the retrieved context?
+2. Does it explicitly refuse out-of-domain queries?
+3. Does it use client-specific retrieved context in recommendations?
+
+### Test 1 — Hallucination: out-of-domain query
+
+**Query:** "What is Natura's NFT strategy and blockchain integration plan?"
+
+**Expected behaviour:** The system has no knowledge of this topic. It should
+refuse to answer rather than generating plausible-sounding invented content.
+
+**Result:**
+```
+Retrieval confidence: low (top cosine score: 0.438)
+Uncertainty: True
+Response: "## Insufficient Evidence
+
+I was unable to generate a report for this query.
+
+Reason: Retrieved context has low relevance to this query (top score: 0.438).
+The sources retrieved may not contain information about this topic.
+
+The knowledge base does not contain information about this topic. Please
+verify the query is within KIRA's scope — Amazon agency performance
+reporting, ACOS management, compliance, and client onboarding context."
+```
+
+**Assessment:** Correct. No hallucination. The system explicitly states what
+it cannot answer and explains why.
+
+### Test 2 — Client specificity: targeted client query
+
+**Query:** "What brand terms are prohibited for Natura and what are their
+ACOS targets?"
+
+**Expected behaviour:** The system should use Natura-specific information
+from the onboarding transcript (prohibited brand terms) and the database
+(actual ACOS targets), not generic SOP values.
+
+**Result before database context integration:**
+- Action 3 referenced "ACOS target range of 40-60%" — the generic SOP
+  launch phase threshold. Wrong for Natura's current account stage.
+
+**Result after database context integration:**
+- Action 2: "Ensure all marketing materials avoid prohibited terms such as
+  'anti-aging' and 'chemical-free'" — correct, from Natura transcript.
+- Action 3: "Track ACOS as it approaches the break-even point of 38%" —
+  correct, from Natura's acos_targets database record.
+
+**Assessment:** Grounding improved significantly after integrating database
+context into the Research Agent. Two of three recommended actions are now
+grounded in specific retrieved client data.
+
+### What changed because of generation testing
+
+| Finding | Change made |
+|---|---|
+| System generated generic ACOS targets from SOP instead of client-specific values | Research Agent now queries acos_targets and product_catalogue tables and passes operational context to assembler |
+| Low confidence retrieval triggered generation instead of refusal | Uncertainty logic updated — confidence=low always triggers uncertainty flag |
+| Report Agent failed silently when analysis narrative was empty | Added explicit uncertainty response path that bypasses analysis narrative requirement |
+| Reranker returned identical scores (-10.117) for client namespace queries | Reranker disabled for client queries — bi-encoder alone produces better results |
+
+### Known generation gaps
+
+**Generic Buy Box recommendations:** The Buy Box recovery SOP describes a
+general procedure. Without client-specific Buy Box history in the knowledge
+base, recommendations remain generic ("investigate competitive pricing")
+rather than specific ("reprice within 2% of lowest FBA offer per the Buy Box
+SOP, but do not go below Natura's minimum price floor").
+
+This is a retrieval coverage issue, not a hallucination issue. The system
+does not invent procedure steps — it generates reasonable generic advice
+when specific guidance is not available in the retrieved context.
+
+**Fix identified:** Load client-specific operational notes and historical
+decisions into the transcript namespace alongside the onboarding document.
+The knowledge base currently only contains the initial onboarding call.
+Subsequent account manager notes, escalation records, and resolved incidents
+would provide the specificity needed for grounded procedural recommendations.
+
+**One metric ordering issue:** The Analysis Agent reports the most recent
+Buy Box percentage value (which may have recovered) while the anomaly
+detection captures the historical drop date. When the latest value differs
+from the anomaly value, the report shows apparently contradictory numbers.
+Root cause: the Analysis Agent sorts by most recent date for the summary
+metric but the anomaly was detected on an earlier date.
+
+---
+
+## Summary across all layers
+
+| Layer | Status | Primary metric | Known gap |
+|---|---|---|---|
+| Retrieval | Production-ready | Dense MRR 0.740, R@5 0.868 | Compliance PDF chunking, paraphrased queries |
+| Context assembly | Production-ready | Correctly separates sources, signals uncertainty | Section title detection ~29% miss rate |
+| Generation | Production-ready | No hallucination on tested queries | Generic recommendations when client-specific SOP not available |
+| Uncertainty | Production-ready | Refuses out-of-domain queries explicitly | — |
+
+The system meets the four production criteria set before build began:
+retrieval working, context construction working, generation without
+hallucination, explicit uncertainty when evidence is insufficient.
