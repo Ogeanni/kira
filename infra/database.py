@@ -154,6 +154,8 @@ class PipelineRun(Base):
     s3_key = Column(String, nullable=True)
     started_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
+    faithfulness_score = Column(Float, nullable=True)
+    faithfulness_flagged = Column(Boolean, nullable=True)
 
 
 class Feedback(Base):
@@ -447,6 +449,8 @@ def save_pipeline_run(session: Session, run_data: dict) -> None:
         total_tokens=run_data.get("total_tokens", 0),
         cost_usd=run_data.get("cost_usd", 0.0),
         latency_seconds=run_data.get("latency_seconds", 0.0),
+        faithfulness_score=run_data.get("faithfulness_score"),
+        faithfulness_flagged=run_data.get("faithfulness_flagged"),
         has_final_report=bool(run_data.get("final_report")),
         errors=json.dumps(run_data.get("errors", [])),
         s3_key=run_data.get("s3_key"),

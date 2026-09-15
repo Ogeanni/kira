@@ -104,6 +104,23 @@ def run_pipeline(
     state = compliance(state)
     agent_times['compliance'] = round(time.time() - t, 2)
 
+    # ── Faithfulness check ────────────────────────────────────────
+    if state.final_report and state.assembled_context:
+        from intelligence.faithfulness import check_faithfulness
+        faith = check_faithfulness(
+            report=state.final_report,
+            context_window=state.assembled_context.context_window,
+            client_id=state.client_id,
+            run_id=state.run_id,
+        )
+        state.faithfulness = faith
+        if verbose:
+            flag = "⚠ FLAGGED" if faith["flagged"] else "✓"
+            print(f"  [Faithfulness] Score: {faith['faithfulness_score']} {flag}")
+            if faith["unsupported_claims"]:
+                for c in faith["unsupported_claims"]:
+                    print(f"    - {c}")
+
     # ── Log run to database ───────────────────────────────────────
     total_elapsed = (datetime.now() - started_at).total_seconds()
     _log_run(state, elapsed=total_elapsed, agent_times=agent_times)
@@ -131,6 +148,11 @@ def run_pipeline(
             print(f"LLM calls        : {s['total_calls']}")
             print(f"Total tokens     : {s['total_input_tokens'] + s['total_output_tokens']:,}")
             print(f"Cost             : ${s['total_cost_usd']:.6f}")
+
+        if state.faithfulness:
+            f = state.faithfulness
+            flag = " ⚠ FLAGGED" if f["flagged"] else ""
+            print(f"Faithfulness     : {f['faithfulness_score']}{flag}")
             
         if state.errors:
             print(f"Errors           : {len(state.errors)}")
@@ -195,6 +217,8 @@ def _log_run(state: PipelineState, elapsed: float, agent_times: dict,) -> None:
             "total_tokens":         summary.get("total_input_tokens", 0) + summary.get("total_output_tokens", 0),
             "cost_usd":             summary.get("total_cost_usd", 0.0),
             "latency_seconds":      round(elapsed, 2),
+            "faithfulness_score":   state.faithfulness.get("faithfulness_score") if state.faithfulness else None,
+            "faithfulness_flagged": state.faithfulness.get("flagged") if state.faithfulness else None,
             "final_report":         state.final_report,
             "errors":               state.errors,
             "s3_key":               "",

@@ -98,6 +98,8 @@ class PipelineState(BaseModel):
 
     usage_tracker: Optional[Any] = Field(default_factory=UsageTracker)
 
+    faithfulness: Optional[dict] = None
+
     def mark_complete(self, agent_name: str) -> None:
         """Records that an agent finished successfully."""
         self.completed_agents.append(agent_name)
