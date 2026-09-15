@@ -1,25 +1,3 @@
----
-title: KIRA Knowledge Intelligence Agent
-emoji: 🤖
-colorFrom: blue
-colorTo: green
-sdk: streamlit
-sdk_version: "1.32.0"
-app_file: output/app.py
-pinned: false
----
-
----
-title: KIRA Knowledge Intelligence Agent
-emoji: 🤖
-colorFrom: blue
-colorTo: green
-sdk: streamlit
-sdk_version: "1.32.0"
-app_file: output/app.py
-pinned: false
----
-
 # KIRA — Knowledge Intelligence & Reporting Agent
 
 A production multi-agent AI platform that automates performance analysis,
@@ -28,8 +6,8 @@ anomaly detection, and compliance-checked report generation for e-commerce agenc
 Built as a portfolio project to demonstrate end-to-end AI engineering —
 from embeddings and vector retrieval to agent orchestration, memory, and deployment.
 
-**Live demo:** https://ogeanni-kira-outputapp-irgjbk.streamlit.app/
-**API:** https://kira-api-pvpl.onrender.com/docs 
+**Live demo:** [kira-app.streamlit.app](https://kira-app.streamlit.app)
+**API:** [kira-api-pvpl.onrender.com/docs](https://kira-api-pvpl.onrender.com/docs)
 
 ---
 
@@ -47,7 +25,7 @@ guidelines, and formats it for the client. ~2.5 hours per client per week.
 
 **After KIRA:** A scheduled pipeline retrieves relevant context semantically,
 detects anomalies against a rolling baseline, generates a structured report, and
-validates it against compliance rules automatically. ~60 seconds per client.
+validates it against compliance rules automatically. ~18 seconds per client.
 
 ---
 
@@ -93,43 +71,43 @@ Unstructured docs (SOPs, transcripts, frameworks)
   use 40%. Flat thresholds fail on tight metrics. Rolling 14-day baseline avoids
   the anomaly contaminating its own reference window.
 
-- **LoRA stub** — compliance agent checks `settings.has_lora` before calling GPT-4o-mini.
+- **LoRA stub** — compliance agent checks `settings.has_lora` before calling GPT-4o.
   When the Phi-3-mini adapter is trained and loaded, it fires first as a
-  zero-cost classifier. Uncertain cases escalate to GPT-4o-mini. The pipeline
+  zero-cost classifier. Uncertain cases escalate to GPT-4o. The pipeline
   degrades gracefully without it.
 
 ---
 
 ## Tech Stack
 
-| Layer             | Technology                                        |
-|-------------------|---------------------------------------------------|
-| Embeddings        | OpenAI text-embedding-3-small                     |
-| Vector store      | Pinecone (prod) · ChromaDB (dev)                  |
-| LLM               | GPT-4o-mini                                       |
-| Agent framework   | Custom pipeline with Pydantic state               |
-| Tool protocol     | MCP (Model Context Protocol)                      |
-| Memory            | Mem0 + ChromaDB (cross-session episodic memory)   |
-| Retrieval eval    | Ragas (faithfulness · context precision)          |
-| Observability     | LangSmith (tracing) · cost tracking per run       |
-| API               | FastAPI + uvicorn                                 |
-| UI                | Streamlit                                         |
-| Storage           | AWS S3                                            |
-| Deployment        | Render (live) · EC2 + Nginx + systemd (documented)|
+| Layer           | Technology                                          |
+|-----------------|-----------------------------------------------------|
+| Embeddings      | OpenAI text-embedding-3-small                       |
+| Vector store    | Pinecone (prod) · ChromaDB (dev)                    |
+| LLM             | GPT-4o-mini / GPT-4o                                |
+| Agent framework | Custom pipeline with Pydantic state                 |
+| Tool protocol   | MCP (Model Context Protocol)                        |
+| Memory          | Mem0 + ChromaDB (cross-session episodic memory)     |
+| Retrieval eval  | Ragas (faithfulness · context precision)            |
+| Observability   | LangSmith (tracing) · cost tracking per run         |
+| API             | FastAPI + uvicorn                                   |
+| UI              | Streamlit                                           |
+| Storage         | AWS S3                                              |
+| Deployment      | Render (live) · EC2 + Nginx + systemd (documented)  |
 
 ---
 
 ## Production Metrics
 
-| Metric                            | Value                         |
-|-----------------------------------|-------------------------------|
-| Retrieval faithfulness (Ragas)    | 0.917 (threshold: 0.85)       |
-| Context precision (Ragas)         | 0.933 (threshold: 0.80)       |
-| Live retrieval faithfulness       | 0.867 ✓                       |
-| Cost per pipeline run             | ~$0.003                       |
-| End-to-end latency                | ~60s                          |
-| Anomaly detection                 | 4/4 injected anomalies caught |
-| Compliance pass rate              | 100% on synthetic dataset     |
+| Metric                          | Value                         |
+|---------------------------------|-------------------------------|
+| Retrieval faithfulness (Ragas)  | 0.917 (threshold: 0.85)       |
+| Context precision (Ragas)       | 0.933 (threshold: 0.80)       |
+| Live retrieval faithfulness     | 0.867 ✓                       |
+| Cost per pipeline run           | ~$0.003                       |
+| End-to-end latency              | ~30s                          |
+| Anomaly detection               | 4/4 injected anomalies caught |
+| Compliance pass rate            | 100% on synthetic dataset     |
 
 ---
 
@@ -137,12 +115,12 @@ Unstructured docs (SOPs, transcripts, frameworks)
 
 Four clients, four anomaly types, all detected:
 
-| Client        | Anomaly               | Deviation                     | Detected  |
-|---------------|-----------------------|-------------------------------|-----------|
-| Lumina        | Listing suppression   | Sessions -89%, Revenue -84%   | ✓         |
-| VitalBlend    | ACOS spike            | ACOS +30% above baseline      | ✓         |
-| PeakGear      | Seasonal spike        | Sessions +42% above baseline  | ✓         |
-| Natura        | Buy Box loss          | Buy Box -57%                  | ✓ (day 45)|
+| Client      | Anomaly             | Deviation                     | Detected   |
+|-------------|---------------------|-------------------------------|------------|
+| Lumina      | Listing suppression | Sessions -89%, Revenue -84%   | ✓          |
+| VitalBlend  | ACOS spike          | ACOS +30% above baseline      | ✓          |
+| PeakGear    | Seasonal spike      | Sessions +42% above baseline  | ✓          |
+| Natura      | Buy Box loss        | Buy Box -57%                  | ✓ (day 45) |
 
 Detection uses a rolling 14-day baseline with per-metric thresholds.
 The rolling window excludes the anomaly day from its own baseline —
@@ -206,7 +184,7 @@ kira/
 
 ```bash
 # Clone and set up environment
-git clone https://github.com/Ogeanni/kira.git
+git clone https://github.com/YOUR_USERNAME/kira.git
 cd kira
 conda create -n kira python=3.10 -y
 conda activate kira
@@ -259,11 +237,11 @@ Instance not running to avoid ongoing costs — full config committed to repo.
 Chunking strategy was chosen by benchmarking all three options with Ragas
 on a held-out eval set of 5 questions with known ground truth:
 
-| Strategy          | Faithfulness  | Relevancy | Precision |
-|-------------------|---------------|-----------|-----------|
-| sentence_window   | **0.917**     | **0.964** | **0.933** |
-| fixed_size        | 0.900         | 0.944     | 0.900     |
-| recursive         | 0.875         | 0.943     | 0.900     |
+| Strategy | Faithfulness | Relevancy | Precision |
+|---|---|---|---|
+| sentence_window | **0.917** | **0.964** | **0.933** |
+| fixed_size | 0.900 | 0.944 | 0.900 |
+| recursive | 0.875 | 0.943 | 0.900 |
 
 `sentence_window` wins because it embeds at sentence granularity for
 precise matching but returns surrounding context for richer generation.
@@ -280,7 +258,8 @@ with code 1 if either drops below threshold — usable as a CI quality gate.
 
 **Library versioning is a real engineering problem.** Ragas 0.4.x changed
 its entire API across three releases with no clean migration path. The right
-call was to pin to 0.1.21. I don't fight a library mid-refactor, I pinned and move on.
+call — pin to 0.1.21 — is what a senior engineer does. You don't fight a
+library mid-refactor, you pin and move on.
 
 **Flat thresholds fail on tight metrics.** A 40% deviation threshold catches
 listing suppression events (sessions -89%) but misses ACOS spikes (+29%).
@@ -291,7 +270,7 @@ with ChromaDB and Pinecone implementations took 30 extra minutes upfront.
 It paid back when switching from local to production was a one-line env var
 change, not a rewrite.
 
-**Synthetic data with known ground truth is better than real data for evals.**
+**Synthetic data with known ground truth is good for evals.**
 Because the anomaly dates are controlled, precision and recall are measurable.
 "The system detected the anomaly" is provable, not assumed.
 
@@ -299,4 +278,5 @@ Because the anomaly dates are controlled, precision and recall are measurable.
 
 ## Author
 
+AI Engineering.
 Building production systems
