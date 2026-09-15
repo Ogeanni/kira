@@ -114,6 +114,12 @@ def _check_with_gpt4o(state: PipelineState) -> ComplianceResult:
     )
 
     raw_response = response.content.strip()
+    # Strip markdown code fences if present
+    # gpt-4o sometimes wraps JSON in ```json ... ``` blocks
+    if raw_response.startswith("```"):
+        lines = raw_response.split("\n")
+        raw_response = "\n".join(lines[1:-1])
+
     try:
         result = json.loads(raw_response)
         return ComplianceResult(
