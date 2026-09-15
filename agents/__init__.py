@@ -18,6 +18,15 @@ Why Pydantic?
 from typing import Optional, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
+from pathlib import Path
+import sys
+
+import sys
+ROOT = Path(__file__).parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from intelligence.llm_client import UsageTracker
 
 
 class RetrievedContext(BaseModel):
@@ -86,6 +95,8 @@ class PipelineState(BaseModel):
     # ── Pipeline metadata ─────────────────────────────────────────
     errors: list[str] = Field(default_factory=list)
     completed_agents: list[str] = Field(default_factory=list)
+
+    usage_tracker: Optional[Any] = Field(default_factory=UsageTracker)
 
     def mark_complete(self, agent_name: str) -> None:
         """Records that an agent finished successfully."""

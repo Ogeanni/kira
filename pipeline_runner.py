@@ -19,6 +19,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+import time
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -37,6 +38,8 @@ from config.settings import get_settings
 
 settings = get_settings()
 
+from intelligence.llm_client import reset_global_tracker, get_global_tracker
+reset_global_tracker()
 
 def run_pipeline(
     client_id: str,
@@ -72,21 +75,38 @@ def run_pipeline(
     )
 
     # ── Agent pipeline ────────────────────────────────────────────
+    agent_times = {}
+
+    t = time.time()
     state = research(state)
+    agent_times['research'] = round(time.time() - t, 2)
     if not state.is_healthy:
         _print_errors(state, verbose)
+        _log_run(state, elapsed=time.time() - started_at.timestamp(), agent_times=agent_times)
         return state
 
+    t = time.time()
     state = analysis(state)
+    agent_times['analysis'] = round(time.time() - t, 2)
+
+    t = time.time()
     state = report(state)
+    agent_times['report'] = round(time.time() - t, 2)
 
     if not state.report_draft:
         if verbose:
             print("\n  Pipeline stopped — no report generated.")
         _print_errors(state, verbose)
+        _log_run(state, elapsed=time.time() - started_at.timestamp(), agent_times=agent_times)
         return state
 
+    t = time.time()
     state = compliance(state)
+    agent_times['compliance'] = round(time.time() - t, 2)
+
+    # ── Log run to database ───────────────────────────────────────
+    total_elapsed = (datetime.now() - started_at).total_seconds()
+    _log_run(state, elapsed=total_elapsed, agent_times=agent_times)
 
     # ── Memory persistence ────────────────────────────────────────
     if save_memory and settings.mem0_enabled:
@@ -98,9 +118,20 @@ def run_pipeline(
     if verbose:
         print(f"\n{'='*60}")
         print(f"Pipeline complete in {elapsed:.1f}s")
+        print(f"  research:   {agent_times.get('research', 0)}s")
+        print(f"  analysis:   {agent_times.get('analysis', 0)}s")
+        print(f"  report:     {agent_times.get('report', 0)}s")
+        print(f"  compliance: {agent_times.get('compliance', 0)}s")
         print(f"Agents completed : {', '.join(state.completed_agents)}")
         print(f"Compliance       : {'PASSED' if state.compliance and state.compliance.passed else 'FAILED'}")
         print(f"Final report     : {'SET' if state.final_report else 'NOT SET'}")
+        tracker = get_global_tracker()
+        s = tracker.summary()
+        if s['total_calls'] > 0:
+            print(f"LLM calls        : {s['total_calls']}")
+            print(f"Total tokens     : {s['total_input_tokens'] + s['total_output_tokens']:,}")
+            print(f"Cost             : ${s['total_cost_usd']:.6f}")
+            
         if state.errors:
             print(f"Errors           : {len(state.errors)}")
             for e in state.errors:
@@ -138,6 +169,39 @@ def _save_memories(state: PipelineState, verbose: bool) -> None:
     except Exception as e:
         if verbose:
             print(f"\n  [Memory] Save failed (non-critical): {e}")
+
+
+def _log_run(state: PipelineState, elapsed: float, agent_times: dict,) -> None:
+    """
+    Logs the pipeline run to the pipeline_runs table.
+    Called after every run regardless of outcome.
+    Non-blocking — failures are logged but don't raise.
+    """
+    try:
+        tracker = get_global_tracker()
+        summary = tracker.summary()
+
+        from infra.database import get_session, save_pipeline_run
+        session = get_session()
+        save_pipeline_run(session, {
+            "run_id":               state.run_id,
+            "client_id":            state.client_id,
+            "query":                state.query,
+            "completed_agents":     state.completed_agents,
+            "anomalies_detected":   len(state.anomalies),
+            "compliance_passed":    state.compliance.passed if state.compliance else None,
+            "compliance_confidence":state.compliance.confidence if state.compliance else None,
+            "llm_calls":            summary.get("total_calls", 0),
+            "total_tokens":         summary.get("total_input_tokens", 0) + summary.get("total_output_tokens", 0),
+            "cost_usd":             summary.get("total_cost_usd", 0.0),
+            "latency_seconds":      round(elapsed, 2),
+            "final_report":         state.final_report,
+            "errors":               state.errors,
+            "s3_key":               "",
+        })
+        session.close()
+    except Exception as e:
+        print(f"  [Monitor] Failed to log run (non-critical): {e}")
 
 
 def _print_errors(state: PipelineState, verbose: bool) -> None:
