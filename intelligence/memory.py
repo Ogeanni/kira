@@ -26,7 +26,7 @@ not a plain string — same format as OpenAI chat messages.
 Run directly to test:
     python intelligence/memory.py
 """
-
+import os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -49,8 +49,9 @@ MEMORY_CONFIG = {
         "provider": "qdrant",
         "config": {
             "collection_name": "kira_memory",
-            "host": "localhost",
-            "port": 6333,
+            "host": os.getenv("QDRANT_HOST", "localhost"),
+            "port": int(os.getenv("QDRANT_PORT", "6333")),
+            "api_key": os.getenv("QDRANT_API_KEY", None),
         },
     },
 }
