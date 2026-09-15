@@ -9,6 +9,17 @@ app_file: output/app.py
 pinned: false
 ---
 
+---
+title: KIRA Knowledge Intelligence Agent
+emoji: 🤖
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: "1.32.0"
+app_file: output/app.py
+pinned: false
+---
+
 # KIRA — Knowledge Intelligence & Reporting Agent
 
 A production multi-agent AI platform that automates performance analysis,
