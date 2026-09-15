@@ -21,6 +21,7 @@ Endpoints:
 
 import json
 from datetime import datetime
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -62,9 +63,13 @@ class PipelineRequest(BaseModel):
 
 
 class FeedbackRequest(BaseModel):
-    run_id: str
-    rating: str       # "up" or "down"
-    comment: str = ""
+    run_id:             str
+    client_id:          Optional[str] = None
+    event_type:         str = "explicit"
+    rating:             Optional[str] = None   # up | down
+    comment:            Optional[str] = None
+    time_on_report:     Optional[int] = None   # seconds
+    faithfulness_score: Optional[float] = None
 
 
 class PipelineResponse(BaseModel):
@@ -168,43 +173,83 @@ def get_reports(client_id: str | None = None):
     return list_reports(client_id=client_id)
 
 
+
 @app.post("/feedback")
 def submit_feedback(request: FeedbackRequest):
-    """Logs thumbs up/down feedback on a report."""
-    if request.rating not in ("up", "down"):
-        raise HTTPException(status_code=400, detail="rating must be 'up' or 'down'",)
+    """
+    Records feedback on a pipeline run.
+
+    Accepts both explicit (thumbs up/down) and implicit signals
+    (copy event, view duration, re-run detection).
+
+    event_type:
+      explicit      — user rating
+      report_copied — user copied the report to clipboard
+      report_viewed — report was viewed (time_on_report populated)
+      report_rerun  — client report was re-run within 10 minutes
+    """
+    valid_event_types = {'explicit', 'report_copied', 'report_viewed', 'report_rerun'}
+    if request.event_type not in valid_event_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"event_type must be one of {valid_event_types}"
+        )
+
+    if request.event_type == 'explicit' and request.rating not in ('up', 'down', None):
+        raise HTTPException(
+            status_code=400,
+            detail="rating must be 'up' or 'down'"
+        )
 
     try:
         from infra.database import get_session, Feedback
         session = get_session()
         record = Feedback(
             run_id=request.run_id,
+            client_id=request.client_id,
+            event_type=request.event_type,
             rating=request.rating,
             comment=request.comment,
+            time_on_report=request.time_on_report,
+            faithfulness_score=request.faithfulness_score,
         )
         session.add(record)
         session.commit()
         session.close()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save feedback: {e}")
-    return {"status": "saved", "run_id": request.run_id, "rating": request.rating}
 
+    return {
+        "status": "recorded",
+        "run_id": request.run_id,
+        "event_type": request.event_type,
+    }
 
 
 @app.get("/feedback")
-def get_all_feedback():
-    """Returns all submitted feedback."""
+def get_feedback(client_id: Optional[str] = None, event_type: Optional[str] = None):
+    """Returns feedback records, optionally filtered by client or event type."""
     try:
         from infra.database import get_session, Feedback
         session = get_session()
-        records = session.query(Feedback).order_by(Feedback.created_at.desc()).all()
+        query = session.query(Feedback).order_by(Feedback.created_at.desc())
+        if client_id:
+            query = query.filter(Feedback.client_id == client_id)
+        if event_type:
+            query = query.filter(Feedback.event_type == event_type)
+        records = query.limit(100).all()
         session.close()
         return [
             {
-                "run_id": r.run_id,
-                "rating": r.rating,
-                "comment": r.comment,
-                "created_at": r.created_at.isoformat() if r.created_at else None,
+                "id":                r.id,
+                "run_id":            r.run_id,
+                "client_id":         r.client_id,
+                "event_type":        r.event_type,
+                "rating":            r.rating,
+                "comment":           r.comment,
+                "time_on_report":    r.time_on_report,
+                "faithfulness_score":r.faithfulness_score,
+                "created_at":        r.created_at.isoformat() if r.created_at else None,
             }
             for r in records
         ]

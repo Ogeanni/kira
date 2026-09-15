@@ -160,16 +160,28 @@ class PipelineRun(Base):
 
 class Feedback(Base):
     """
-    Thumbs up/down on generated reports.
-    In production, negative feedback triggers retrieval reranking.
+    Feedback on pipeline runs — explicit and implicit signals.
+
+    explicit: user clicked thumbs up/down (rating = 'up' | 'down')
+    implicit: system-collected signals without user action
+
+    event_type values:
+      'explicit'      — user clicked thumbs up/down
+      'report_copied' — user copied report (strongest positive signal)
+      'report_viewed' — report was opened and read (time_on_report > 0)
+      'report_rerun'  — same client re-ran within 10 minutes (negative signal)
     """
     __tablename__ = "feedback"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    run_id = Column(String, ForeignKey("pipeline_runs.id"), nullable=False)
-    rating = Column(String, nullable=False)        # "up" or "down"
-    comment = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id              = Column(Integer, primary_key=True, autoincrement=True)
+    run_id          = Column(String, nullable=False, index=True)
+    client_id       = Column(String, nullable=True)
+    event_type      = Column(String(50), nullable=False, default='explicit')
+    rating          = Column(String(10), nullable=True)   # up | down | None
+    comment         = Column(Text, nullable=True)
+    time_on_report  = Column(Integer, nullable=True)      # seconds
+    faithfulness_score = Column(Float, nullable=True)     # from run
+    created_at      = Column(DateTime, default=datetime.utcnow)
 
 
 class CampaignPerformance(Base):
