@@ -34,7 +34,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from config.settings import get_settings
-from scripts.run_pipeline import run_pipeline
+from pipeline_runner import run_pipeline
 from infra.s3 import upload_report, download_report, list_reports
 
 settings = get_settings()
@@ -78,12 +78,6 @@ class PipelineResponse(BaseModel):
     errors: list[str]
     s3_key: str = ""
 
-
-# ── In-memory feedback store ──────────────────────────────────────────
-# In production this would be a database.
-# Railway's filesystem is ephemeral — feedback stored in memory
-# persists for the lifetime of the process only.
-_feedback: dict = {}
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────
@@ -178,19 +172,41 @@ def get_reports(client_id: str | None = None):
 def submit_feedback(request: FeedbackRequest):
     """Logs thumbs up/down feedback on a report."""
     if request.rating not in ("up", "down"):
-        raise HTTPException(
-            status_code=400,
-            detail="rating must be 'up' or 'down'",
+        raise HTTPException(status_code=400, detail="rating must be 'up' or 'down'",)
+
+    try:
+        from infra.database import get_session, Feedback
+        session = get_session()
+        record = Feedback(
+            run_id=request.run_id,
+            rating=request.rating,
+            comment=request.comment,
         )
-    _feedback[request.run_id] = {
-        "rating": request.rating,
-        "comment": request.comment,
-        "timestamp": datetime.now().isoformat(),
-    }
+        session.add(record)
+        session.commit()
+        session.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save feedback: {e}")
     return {"status": "saved", "run_id": request.run_id, "rating": request.rating}
+
 
 
 @app.get("/feedback")
 def get_all_feedback():
     """Returns all submitted feedback."""
-    return _feedback
+    try:
+        from infra.database import get_session, Feedback
+        session = get_session()
+        records = session.query(Feedback).order_by(Feedback.created_at.desc()).all()
+        session.close()
+        return [
+            {
+                "run_id": r.run_id,
+                "rating": r.rating,
+                "comment": r.comment,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in records
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve feedback: {e}")
