@@ -51,6 +51,10 @@ GROUNDING RULES — these override everything else:
    specific action for [topic]."
 3. Never use general Amazon best practices as a substitute for specific
    retrieved context. If it is not in the context, do not recommend it.
+4. When recommending compliance actions, always use the word AVOID:
+   Write: "Avoid using [term] in listing copy"
+   Never write: "Ensure compliance with [term]" or "Review [term] usage"
+   The word AVOID makes the recommendation unambiguous for compliance checking.
 """.strip()
 
 
