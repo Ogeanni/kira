@@ -1,0 +1,46 @@
+python-dotenv==1.2.2
+pydantic==2.12.5
+pydantic-settings==2.13.1
+
+# OpenAI
+openai==1.109.1
+tiktoken==0.12.0
+
+# Vector stores
+chromadb==1.5.5
+pinecone==8.1.0
+
+# Memory
+mem0ai==1.0.7
+qdrant-client==1.19.0
+
+# MCP
+mcp==1.26.0
+
+# Data
+pandas==2.3.3
+numpy>=1.22.5
+openpyxl==3.1.5
+
+# Document extraction
+pdfplumber==0.11.6
+python-docx==1.2.0
+reportlab==4.4.1
+
+# Reranker
+torch==2.2.2
+sentence-transformers==3.0.1
+rank-bm25
+
+# AWS
+boto3
+
+# API
+fastapi==0.135.2
+uvicorn==0.42.0
+httpx==0.28.1
+
+# Database
+sqlalchemy==2.0.48
+psycopg2-binary==2.9.11
+alembic
